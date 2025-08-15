@@ -1,0 +1,46 @@
+[Unit]
+Description=Pterodactyl Control Plane
+Documentation=https://github.com/pterodactyl-cp/control-plane
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/hosting/app/deploy
+Environment=COMPOSE_HTTP_TIMEOUT=120
+
+# Start services
+ExecStart=/usr/bin/docker compose up -d
+
+# Stop services
+ExecStop=/usr/bin/docker compose down
+
+# Reload services
+ExecReload=/usr/bin/docker compose up -d --force-recreate
+
+# Health check
+ExecStartPost=/bin/bash -c 'sleep 30 && /usr/bin/docker compose ps | grep -q "Up"'
+
+# Security
+User=deploy
+Group=docker
+
+# Restart policy
+Restart=on-failure
+RestartSec=30
+TimeoutStartSec=300
+TimeoutStopSec=120
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=hosting-control-plane
+
+[Install]
+WantedBy=multi-user.target

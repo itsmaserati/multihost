@@ -1,0 +1,310 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Global Admins (super users)
+model GlobalAdmin {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  active    Boolean  @default(true)
+  twoFaSecret String? @map("two_fa_secret")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  refreshTokens RefreshToken[]
+  auditLogs     AuditLog[]
+
+  @@map("global_admins")
+}
+
+// Tenants (customer organizations)
+model Tenant {
+  id          String  @id @default(cuid())
+  name        String
+  domain      String  @unique
+  active      Boolean @default(true)
+  description String?
+
+  // Quotas
+  maxNodes   Int @default(5) @map("max_nodes")
+  maxServers Int @default(10) @map("max_servers")
+  maxUsers   Int @default(50) @map("max_users")
+  storageGb  Int @default(100) @map("storage_gb")
+  memoryMb   Int @default(4096) @map("memory_mb")
+  cpuCores   Int @default(2) @map("cpu_cores")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  admins     TenantAdmin[]
+  nodes      Node[]
+  servers    Server[]
+  users      User[]
+  eggs       TenantEgg[]
+  auditLogs  AuditLog[]
+
+  @@map("tenants")
+}
+
+// Tenant administrators
+model TenantAdmin {
+  id        String   @id @default(cuid())
+  tenantId  String   @map("tenant_id")
+  email     String   @unique
+  password  String
+  name      String
+  active    Boolean  @default(true)
+  role      String   @default("admin") // admin, viewer
+  twoFaSecret String? @map("two_fa_secret")
+  inviteToken String? @unique @map("invite_token")
+  inviteExpiresAt DateTime? @map("invite_expires_at")
+  lastLoginAt DateTime? @map("last_login_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  refreshTokens RefreshToken[]
+  auditLogs     AuditLog[]
+
+  @@map("tenant_admins")
+}
+
+// Physical nodes (tenant servers)
+model Node {
+  id             String  @id @default(cuid())
+  tenantId       String  @map("tenant_id")
+  name           String
+  fqdn           String
+  publicIp       String  @map("public_ip")
+  privateIp      String? @map("private_ip")
+  pterodactylId  Int?    @unique @map("pterodactyl_id")
+  locationId     Int?    @map("location_id")
+  
+  // Hardware specs
+  cpuCores       Int     @map("cpu_cores")
+  memoryMb       Int     @map("memory_mb")
+  diskGb         Int     @map("disk_gb")
+  
+  // Status
+  status         String  @default("pending") // pending, installing, online, offline, error
+  lastHeartbeat  DateTime? @map("last_heartbeat")
+  agentVersion   String? @map("agent_version")
+  wingsVersion   String? @map("wings_version")
+  
+  // Configuration
+  enrollmentToken String? @unique @map("enrollment_token")
+  enrollmentExpiresAt DateTime? @map("enrollment_expires_at")
+  daemonToken    String? @map("daemon_token") // encrypted
+  
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  servers       Server[]
+  allocations   Allocation[]
+  metrics       NodeMetric[]
+  auditLogs     AuditLog[]
+
+  @@map("nodes")
+}
+
+// Network allocations
+model Allocation {
+  id            String  @id @default(cuid())
+  nodeId        String  @map("node_id")
+  ip            String
+  port          Int
+  alias         String?
+  assigned      Boolean @default(false)
+  pterodactylId Int?    @unique @map("pterodactyl_id")
+  serverId      String? @map("server_id")
+
+  node   Node    @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  server Server? @relation(fields: [serverId], references: [id])
+
+  @@unique([ip, port])
+  @@map("allocations")
+}
+
+// Game servers
+model Server {
+  id            String  @id @default(cuid())
+  tenantId      String  @map("tenant_id")
+  nodeId        String  @map("node_id")
+  userId        String? @map("user_id") // owner
+  pterodactylId Int?    @unique @map("pterodactyl_id")
+  
+  name          String
+  description   String?
+  eggId         Int     @map("egg_id")
+  
+  // Resources
+  memoryMb      Int     @map("memory_mb")
+  swapMb        Int     @default(0) @map("swap_mb")
+  diskMb        Int     @map("disk_mb")
+  ioWeight      Int     @default(500) @map("io_weight")
+  cpuLimit      Int     @default(0) @map("cpu_limit")
+  
+  // Status
+  status        String  @default("installing") // installing, offline, starting, running, stopping, error
+  
+  // Configuration
+  startup       String
+  environment   Json    @default("{}")
+  
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  node        Node         @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  owner       User?        @relation("ServerOwner", fields: [userId], references: [id])
+  allocations Allocation[]
+  subusers    ServerUser[]
+  auditLogs   AuditLog[]
+
+  @@map("servers")
+}
+
+// End users (customer's customers)
+model User {
+  id              String  @id @default(cuid())
+  tenantId        String  @map("tenant_id")
+  email           String
+  username        String
+  firstName       String  @map("first_name")
+  lastName        String  @map("last_name")
+  password        String
+  active          Boolean @default(true)
+  pterodactylId   Int?    @unique @map("pterodactyl_id")
+  lastLoginAt     DateTime? @map("last_login_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  tenant           Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  ownedServers     Server[]       @relation("ServerOwner")
+  serverAccess     ServerUser[]
+  refreshTokens    RefreshToken[]
+
+  @@unique([tenantId, email])
+  @@unique([tenantId, username])
+  @@map("users")
+}
+
+// Server subusers (permissions)
+model ServerUser {
+  id        String   @id @default(cuid())
+  serverId  String   @map("server_id")
+  userId    String   @map("user_id")
+  permissions String[] // array of permission strings
+  createdAt DateTime @default(now()) @map("created_at")
+
+  server Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([serverId, userId])
+  @@map("server_users")
+}
+
+// Eggs (game/software templates)
+model Egg {
+  id            Int     @id
+  name          String
+  description   String?
+  dockerImage   String  @map("docker_image")
+  startup       String
+  configFiles   Json    @default("{}") @map("config_files")
+  configLogs    Json    @default("{}") @map("config_logs")
+  configFrom    Json    @default("{}") @map("config_from")
+  configStop    String? @map("config_stop")
+  variables     Json    @default("[]")
+  category      String
+  active        Boolean @default(true)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  tenantEggs TenantEgg[]
+
+  @@map("eggs")
+}
+
+// Tenant egg permissions (which eggs each tenant can use)
+model TenantEgg {
+  id       String @id @default(cuid())
+  tenantId String @map("tenant_id")
+  eggId    Int    @map("egg_id")
+  enabled  Boolean @default(true)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  egg    Egg    @relation(fields: [eggId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, eggId])
+  @@map("tenant_eggs")
+}
+
+// Node metrics
+model NodeMetric {
+  id          String   @id @default(cuid())
+  nodeId      String   @map("node_id")
+  cpuUsage    Float    @map("cpu_usage")
+  memoryUsage Float    @map("memory_usage")
+  diskUsage   Float    @map("disk_usage")
+  networkRx   BigInt   @map("network_rx")
+  networkTx   BigInt   @map("network_tx")
+  timestamp   DateTime @default(now())
+
+  node Node @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+
+  @@map("node_metrics")
+}
+
+// Refresh tokens for JWT
+model RefreshToken {
+  id            String   @id @default(cuid())
+  token         String   @unique
+  globalAdminId String?  @map("global_admin_id")
+  tenantAdminId String?  @map("tenant_admin_id")
+  userId        String?  @map("user_id")
+  expiresAt     DateTime @map("expires_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  globalAdmin GlobalAdmin? @relation(fields: [globalAdminId], references: [id], onDelete: Cascade)
+  tenantAdmin TenantAdmin? @relation(fields: [tenantAdminId], references: [id], onDelete: Cascade)
+  user        User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+// Audit logging
+model AuditLog {
+  id            String   @id @default(cuid())
+  tenantId      String?  @map("tenant_id")
+  globalAdminId String?  @map("global_admin_id")
+  tenantAdminId String?  @map("tenant_admin_id")
+  nodeId        String?  @map("node_id")
+  serverId      String?  @map("server_id")
+  
+  action        String   // create, update, delete, start, stop, etc.
+  resource      String   // tenant, node, server, user, etc.
+  resourceId    String?  @map("resource_id")
+  details       Json?
+  ipAddress     String?  @map("ip_address")
+  userAgent     String?  @map("user_agent")
+  
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  tenant      Tenant?      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  globalAdmin GlobalAdmin? @relation(fields: [globalAdminId], references: [id])
+  tenantAdmin TenantAdmin? @relation(fields: [tenantAdminId], references: [id])
+  node        Node?        @relation(fields: [nodeId], references: [id])
+  server      Server?      @relation(fields: [serverId], references: [id])
+
+  @@map("audit_logs")
+}

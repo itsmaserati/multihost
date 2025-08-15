@@ -1,0 +1,26 @@
+{
+  "name": "pterodactyl-control-plane",
+  "version": "1.0.0",
+  "description": "Production-ready multi-tenant hosting control plane built on top of Pterodactyl",
+  "private": true,
+  "workspaces": [
+    "control-plane",
+    "web-portal",
+    "edge-agent"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "dev": "npm run dev --workspaces",
+    "test": "npm run test --workspaces",
+    "lint": "npm run lint --workspaces",
+    "clean": "npm run clean --workspaces && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

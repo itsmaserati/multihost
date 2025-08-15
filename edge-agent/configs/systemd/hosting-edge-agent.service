@@ -1,0 +1,38 @@
+[Unit]
+Description=Pterodactyl Control Plane Edge Agent
+Documentation=https://github.com/pterodactyl-cp/edge-agent
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=/usr/local/bin/hosting-edge-agent --config /etc/hosting-agent/config.yaml
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=5
+TimeoutStopSec=20
+KillMode=mixed
+
+# Security settings
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/etc/hosting-agent /var/lib/hosting-agent /var/log
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=hosting-edge-agent
+
+[Install]
+WantedBy=multi-user.target
