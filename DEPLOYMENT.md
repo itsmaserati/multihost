@@ -4,7 +4,7 @@ This guide covers deploying the Pterodactyl Control Plane on your DigitalOcean s
 
 ## Server Details
 
-- **Server IP**: `138.68.232.131`
+- **Server IP**: `104.248.71.155`
 - **Domain**: `multihost.techgamingexperts.com`
 - **OS**: Ubuntu 22.04 LTS
 - **Credentials**: `root` / `k#5hzDc+W5S?^C`
@@ -16,13 +16,13 @@ Ensure your domain points to the server:
 ```bash
 # Check DNS resolution
 nslookup multihost.techgamingexperts.com
-# Should return: 138.68.232.131
+# Should return: 104.248.71.155
 ```
 
 ### 2. SSH Access
 Test SSH connection:
 ```bash
-ssh root@138.68.232.131
+ssh root@104.248.71.155
 # Use password: k#5hzDc+W5S?^C
 ```
 

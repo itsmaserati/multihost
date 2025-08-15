@@ -6,7 +6,7 @@ A production-ready multi-tenant hosting control plane built on top of Pterodacty
 
 ### One-Line Installation (DigitalOcean Ready)
 
-For your DigitalOcean server at `138.68.232.131` with domain `multihost.techgamingexperts.com`:
+For your DigitalOcean server at `104.248.71.155` with domain `multihost.techgamingexperts.com`:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/itsmaserati/multihost/master/bootstrap_ubuntu22.sh -o bootstrap.sh \
@@ -16,7 +16,7 @@ curl -fsSL https://raw.githubusercontent.com/itsmaserati/multihost/master/bootst
 ### Prerequisites
 - **Fresh Ubuntu 22.04 LTS server** with root SSH access (✅ Your DigitalOcean droplet)
 - **DNS A record** pointing to your server:
-  - `multihost.techgamingexperts.com` → `138.68.232.131`
+  - `multihost.techgamingexperts.com` → `104.248.71.155`
 - **Minimum Requirements**:
   - 20GB disk space
   - 2GB RAM (4GB+ recommended)
