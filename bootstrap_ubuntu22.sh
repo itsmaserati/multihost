@@ -154,38 +154,74 @@ parse_args() {
     while [[ $# -gt 0 ]]; do
         case $1 in
             --domain-cp)
+                if [[ -z "${2:-}" ]]; then
+                    log_error "Error: --domain-cp requires a value"
+                    exit 1
+                fi
                 DOMAIN_CP="$2"
                 shift 2
                 ;;
             --domain-panel)
+                if [[ -z "${2:-}" ]]; then
+                    log_error "Error: --domain-panel requires a value"
+                    exit 1
+                fi
                 DOMAIN_PANEL="$2"
                 shift 2
                 ;;
             --email)
+                if [[ -z "${2:-}" ]]; then
+                    log_error "Error: --email requires a value"
+                    exit 1
+                fi
                 EMAIL="$2"
                 shift 2
                 ;;
             --timezone)
+                if [[ -z "${2:-}" ]]; then
+                    log_error "Error: --timezone requires a value"
+                    exit 1
+                fi
                 TIMEZONE="$2"
                 shift 2
                 ;;
             --db-external)
+                if [[ -z "${2:-}" ]]; then
+                    log_error "Error: --db-external requires a value (true/false)"
+                    exit 1
+                fi
                 DB_EXTERNAL="$2"
                 shift 2
                 ;;
             --db-url)
+                if [[ -z "${2:-}" ]]; then
+                    log_error "Error: --db-url requires a value"
+                    exit 1
+                fi
                 DB_URL="$2"
                 shift 2
                 ;;
             --redis-external)
+                if [[ -z "${2:-}" ]]; then
+                    log_error "Error: --redis-external requires a value (true/false)"
+                    exit 1
+                fi
                 REDIS_EXTERNAL="$2"
                 shift 2
                 ;;
             --redis-url)
+                if [[ -z "${2:-}" ]]; then
+                    log_error "Error: --redis-url requires a value"
+                    exit 1
+                fi
                 REDIS_URL="$2"
                 shift 2
                 ;;
             --ssh-pubkey)
+                if [[ -z "${2:-}" ]]; then
+                    log_error "Error: --ssh-pubkey requires a value"
+                    exit 1
+                fi
                 SSH_PUBKEY="$2"
                 shift 2
                 ;;
