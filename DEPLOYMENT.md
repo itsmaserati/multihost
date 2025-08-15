@@ -36,8 +36,8 @@ apt install -y git
 
 # Clone the repository
 cd /tmp
-git clone <your-repository-url> pterodactyl-control-plane
-cd pterodactyl-control-plane
+git clone https://github.com/itsmaserati/multihost.git
+cd multihost
 ```
 
 ## Deployment

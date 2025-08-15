@@ -9,7 +9,7 @@ A production-ready multi-tenant hosting control plane built on top of Pterodacty
 For your DigitalOcean server at `138.68.232.131` with domain `multihost.techgamingexperts.com`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/your-org/pterodactyl-control-plane/main/bootstrap_ubuntu22.sh -o bootstrap.sh \
+curl -fsSL https://raw.githubusercontent.com/itsmaserati/multihost/master/bootstrap_ubuntu22.sh -o bootstrap.sh \
   && sudo bash bootstrap.sh --domain-cp multihost.techgamingexperts.com --email admin@techgamingexperts.com
 ```
 
